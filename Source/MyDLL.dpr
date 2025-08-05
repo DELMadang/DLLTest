@@ -6,25 +6,36 @@ uses
 {$APPTYPE CONSOLE}
 
 type
+  PMyData = ^TMyData;
   TMyData = packed record
     Result: Integer;
-    Message: WideString;
+    Message: array[0..3] of Char;
   end;
 
-procedure ProcessRecord(ARecords: array of TMyData); stdcall;
+function GetRecord(var ASize: Integer):Pointer; stdcall;
 var
   i: Integer;
-  LMyData: TMyData;
+  LMyData: array[0..4] of TMyData;
 begin
-  for i := Low(ARecords) to High(ARecords) do
+  for i := 0 to 4 do
   begin
-    LMyData := ARecords[i];
-    WriteLn('Result: ', LMyData.Result, ' Message: ', LMyData.Message);
+    LMyData[i].Result := i;
+    StrPCopy(@LMyData[i].Message[0], 'AB');
   end;
+
+  ASize := SizeOf(TMyData) * 4;
+  GetMem(Result, ASize);
+  Move(LMyData[0], Result^, ASize);
+end;
+
+procedure FreeRecord(AData: Pointer); stdcall;
+begin
+  FreeMem(AData);
 end;
 
 exports
-  ProcessRecord;
+  GetRecord,
+  FreeRecord;
 
 begin
 end.

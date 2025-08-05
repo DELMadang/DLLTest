@@ -9,25 +9,31 @@ uses
 type
   TMyData = packed record
     Result: Integer;
-    Message: WideString;
+    Message: array[0..3] of Char;
   end;
 
-  procedure ProcessRecord(ARecords: array of TMyData); stdcall; external 'MyDLL.DLL';
+  function GetRecord(var ASize: Integer):Pointer; stdcall; external 'MyDLL.dll';
+  procedure FreeRecord(AData: Pointer); stdcall; external 'MyDLL.dll';
 
 procedure Main();
 var
-  LRecords: array of TMyData;
+  LBuffer: Pointer;
+  LSize: Integer;
+  LMyData: array of TMyData;
   i: Integer;
 begin
-  SetLength(LRecords, 5);
-  for i := 0 to 4 do
-  begin
-    LRecords[i].Result := i;
-    LRecords[i].Message := 'Message ' + IntToStr(i);
+  LBuffer := GetRecord(LSize);
+  try
+    SetLength(LMyData, LSize);
+    Move(LBuffer^, LMyData[0], LSize);
+    for i := 0 to (LSize div SizeOf(TMyData)) do
+    begin
+      Writeln(LMyData[i].Result);
+      Writeln(string(LMyData[i].Message));
+    end;
+  finally
+    FreeRecord(LBuffer);
   end;
-
-  WriteLn('Call DLL');
-  ProcessRecord(LRecords);
 
   ReadLn;
 end;
